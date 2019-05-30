@@ -8,28 +8,25 @@ import org.telegram.telegrambots.meta.api.objects.inlinequery.inputmessageconten
 import org.telegram.telegrambots.meta.api.objects.inlinequery.result.InlineQueryResultArticle;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.util.Random;
+
 public class SuperEncryptorBot extends TelegramLongPollingBot {
     private Encryptor encryptor = new SimpleEncryptor();
+    private Encryptor encryptor2 = new SimpleEncryptorDown();
 
     @Override
     public void onUpdateReceived(final Update update) {
         if (update.hasInlineQuery()) {
             String query = update.getInlineQuery().getQuery();
-            String enctypted = encryptor.encrypt(query);
 
-            AnswerInlineQuery answer =
-                    new AnswerInlineQuery();
+            AnswerInlineQuery answer = new AnswerInlineQuery();
             answer.setInlineQueryId(
                     update.getInlineQuery().getId());
-            InlineQueryResultArticle inlineQueryResult =
-                    new InlineQueryResultArticle();
-            inlineQueryResult
-                    .setId("1")
-                    .setTitle(enctypted)
-                    .setInputMessageContent(
-                            new InputTextMessageContent()
-                                    .setMessageText(enctypted));
-            answer.setResults(inlineQueryResult);
+            InlineQueryResultArticle result1 =
+                    getEncryptedResult(query, encryptor);
+            InlineQueryResultArticle result2 =
+                    getEncryptedResult(query, encryptor2);
+            answer.setResults(result1, result2);
             try {
                 execute(answer);
             } catch (TelegramApiException e) {
@@ -37,18 +34,22 @@ public class SuperEncryptorBot extends TelegramLongPollingBot {
             }
 
             System.out.println(query);
-        } else if (update.hasMessage()) {
-            String text = update.getMessage().getText();
-            String enctypted = encryptor.encrypt(text);
-            Long chatId = update.getMessage().getChatId();
-            SendMessage message =
-                    new SendMessage(chatId, enctypted);
-            try {
-                execute(message);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
         }
+    }
+
+    private InlineQueryResultArticle getEncryptedResult(
+            String text, Encryptor encryptor) {
+        String enctypted = encryptor.encrypt(text);
+        Random rnd = new Random();
+        InlineQueryResultArticle inlineQueryResult =
+                new InlineQueryResultArticle();
+        inlineQueryResult
+                .setId(String.valueOf(rnd.nextInt()))
+                .setTitle("Encrypted text: " + enctypted)
+                .setInputMessageContent(
+                        new InputTextMessageContent()
+                                .setMessageText(enctypted));
+        return inlineQueryResult;
     }
 
     public String getBotUsername() {
